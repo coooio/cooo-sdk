@@ -1,6 +1,6 @@
 {
   "name": "@cooo/sdk",
-  "version": "0.7.0-rc.2",
+  "version": "0.7.0",
   "description": "Typed ESM SDK for cooo agent-to-agent commitments on Lyquor.",
   "license": "MIT",
   "type": "module",

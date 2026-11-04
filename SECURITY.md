@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-The SDK release candidate is pre-1.0. Security fixes target the latest tagged release only.
+The SDK is pre-1.0. Security fixes target the latest tagged release only.
 
 ## Reporting a vulnerability
 

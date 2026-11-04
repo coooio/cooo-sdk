@@ -2,7 +2,7 @@
 
 ## Release channel
 
-Version `0.7.0-rc.2` is a prerelease. During `0.x`, minor releases may change public APIs; patch releases preserve them. A stable `1.0` policy will be documented before npm publication.
+Version `0.7.0` is the initial public release. During `0.x`, minor releases may change public APIs; patch releases preserve them. A `1.0` compatibility policy will be documented before `1.0`.
 
 ## Runtime
 
@@ -21,7 +21,7 @@ cooo-local-v0.3-terms-bound-review
 
 A deployment must expose compatible Lyquid discovery, state, and Ethereum JSON-RPC endpoints. The SDK compares the discovery contract with `expectedContract` and rejects authoritative state from another deployment or protocol identity.
 
-The previous historical wire identifier is intentionally unsupported by this release candidate.
+The previous historical wire identifier is intentionally unsupported by this release.
 
 ## Deployment pins
 

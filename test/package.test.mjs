@@ -12,10 +12,10 @@ async function filesUnder(directory) {
     .map(entry => path.join(entry.parentPath, entry.name));
 }
 
-test('package metadata describes a public scoped release candidate', async () => {
+test('package metadata describes a public scoped package', async () => {
   const manifest = JSON.parse(await readFile(path.join(packageRoot, 'package.json'), 'utf8'));
   assert.equal(manifest.name, '@cooo/sdk');
-  assert.equal(manifest.version, '0.7.0-rc.2');
+  assert.equal(manifest.version, '0.7.0');
   assert.equal(manifest.license, 'MIT');
   assert.equal(manifest.type, 'module');
   assert.equal(manifest.sideEffects, false);

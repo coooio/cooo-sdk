@@ -1,12 +1,26 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 — 2026-11-05
 
-### Repository maintenance
+### Added
+
+- Added MIT licensing and public repository metadata for `coooio/cooo-sdk`.
+- Added caller-provided `AbortSignal` support.
+- Added structured error details, retryability metadata, and an `aborted` error code.
+- Added exact caller/operation/payload reconciliation helpers and `waitForOperation(...)`.
+- Added `submitRawTransaction(...)`, which returns an explicit `submitted` outcome rather than implying business success.
+- Added CI, release, security, contribution, API overview, and compatibility documentation.
+
+### Changed
 
 - Split the SDK into focused modules for types, errors, ABI encoding, validation, state validation, operation reconciliation, JSON-RPC, and the client.
-- Reorganized package metadata and repository configuration for the planned public `cooo/sdk` repository.
-- Added editor, line-ending, Node version, CI, release workflow, API overview, and compatibility policy configuration.
+- Trusted mutations now require both `expectedLyquidId` and `expectedContract` deployment pins.
+- Authoritative state reads must report the target cooo protocol identity even when discovery pins are omitted.
+- The SDK now supports Node.js 22 or newer and remains ESM-only.
+
+### Boundary
+
+This public release supports a verified single-node synthetic deployment. It does not provide custody, a production wallet adapter, or real-asset operation.
 
 ## 0.7.0-rc.2 — 2026-11-05
 
@@ -27,7 +41,7 @@
 
 ### Boundary
 
-This prerelease is prepared for public repository review; npm publication remains pending owner credentials. It supports a verified single-node synthetic deployment and does not provide custody, a production wallet adapter, or real-asset operation.
+This prerelease completed public repository review. It supported a verified single-node synthetic deployment and did not provide custody, a production wallet adapter, or real-asset operation.
 
 ## 0.7.0-rc.1 — 2026-11-05
 
