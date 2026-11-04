@@ -1,4 +1,4 @@
-# cooo SDK
+# COOO SDK
 
 `@cooo/sdk` is a typed, dependency-free ESM client for cooo workflows on Lyquor. It validates authoritative state, encodes protocol calls, prepares deployment-bound transactions, and reconciles exact operation intent.
 
