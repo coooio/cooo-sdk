@@ -1,0 +1,6 @@
+* text=auto
+*.mjs text
+*.ts text
+*.json text
+*.md text
+*.yml text
