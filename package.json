@@ -1,0 +1,58 @@
+{
+  "name": "@cooo/sdk",
+  "version": "0.7.0-rc.2",
+  "description": "Typed ESM SDK for cooo agent-to-agent commitments on Lyquor.",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./local-cast-signer": {
+      "types": "./dist/local-cast-signer.d.ts",
+      "import": "./dist/local-cast-signer.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test",
+    "prepublishOnly": "npm run check && npm run build && npm test"
+  },
+  "keywords": [
+    "agent",
+    "cooo",
+    "lyquid",
+    "lyquor",
+    "typescript",
+    "web3",
+    "workflow"
+  ],
+  "author": "cooo contributors",
+  "homepage": "https://github.com/coooio/cooo-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coooio/cooo-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/coooio/cooo-sdk/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "5.7.2"
+  }
+}

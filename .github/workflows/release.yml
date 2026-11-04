@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm run build
+      - run: npm test
+      - name: Verify release tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { readFile } = require('node:fs/promises');
+            const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+            const tag = context.ref.replace('refs/tags/v', '');
+            if (pkg.version !== tag) {
+              core.setFailed(`Tag v${tag} does not match package version ${pkg.version}.`);
+            }
+      - run: npm pack --dry-run
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
