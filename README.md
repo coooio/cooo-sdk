@@ -2,7 +2,7 @@
 
 `@cooo/sdk` is a typed, dependency-free ESM client for cooo workflows on Lyquor. It validates authoritative state, encodes protocol calls, prepares deployment-bound transactions, and reconciles exact operation intent.
 
-Version `0.7.1` targets Node.js 22 or newer and does not support CommonJS.
+Version `0.7.2` targets Node.js 22 or newer and does not support CommonJS.
 
 ## Install
 

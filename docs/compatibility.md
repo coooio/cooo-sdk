@@ -2,7 +2,7 @@
 
 ## Release channel
 
-Version `0.7.1` is the current public patch release. During `0.x`, minor releases may change public APIs; patch releases preserve them. A `1.0` compatibility policy will be documented before `1.0`.
+Version `0.7.2` is the current public patch release. During `0.x`, minor releases may change public APIs; patch releases preserve them. A `1.0` compatibility policy will be documented before `1.0`.
 
 ## Runtime
 
