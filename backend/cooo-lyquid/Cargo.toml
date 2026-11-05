@@ -1,0 +1,16 @@
+[package]
+name = "cooo-lyquid"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+lyquid = { version = "=0.8.0", features = ["ldk"] }
+lyquor-primitives = "=0.8.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[workspace]

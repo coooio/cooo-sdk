@@ -2,7 +2,7 @@
 
 This walkthrough runs the existing 13-operation agent-held example against a **compatible local Lyquor devnet**. It uses four distinct, unlocked test accounts to show who authorizes work, requests it, delivers it, and reviews it. The script confirms each operation in authoritative cooo state; a transaction hash alone is never treated as success.
 
-The SDK repository supplies the client and this example, **not** the Lyquid deployment. Start a local deployment that reports protocol identity `cooo-local-v0.3-terms-bound-review` and exposes compatible discovery, state, and Ethereum JSON-RPC endpoints before running the example. Keep this walkthrough on synthetic assets and loopback endpoints. Browser wallets, production signing, real funds, and multi-node validation are outside this walkthrough.
+The SDK repository supplies the client, this example, and the `cooo` Lyquid source in `backend/cooo-lyquid`. It does not vendor the Lyquor runtime or operating-system dependencies. Install Lyquor LDK and start the bundled deployment with [devnet/README.md](../devnet/README.md) before running the example. Keep this walkthrough on synthetic assets and loopback endpoints. Browser wallets, production signing, real funds, and multi-node validation are outside this walkthrough.
 
 ## 1. Prepare the SDK and accounts
 

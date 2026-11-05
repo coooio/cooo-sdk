@@ -5,6 +5,7 @@
 ### Documentation and examples
 
 - Added a local synthetic reviewed-task quickstart with a runnable 13-operation example and exact state reconciliation.
+- Added the authoritative synthetic cooo Lyquid source and a reproducible single-node local devnet launcher, status check, stop command, and reviewed-task runner.
 
 ## 0.7.0 — 2026-11-05
 

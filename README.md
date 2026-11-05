@@ -39,7 +39,7 @@ cooo-local-v0.3-terms-bound-review
 
 ## Run a reviewed-task walkthrough
 
-For a local synthetic Lyquor devnet, follow [the reviewed-task quickstart](docs/reviewed-task-quickstart.md). It runs the requester, provider, and reviewer workflow with distinct test accounts, confirms each exact operation in authoritative state, and explains how to diagnose uncertain outcomes. The example requires a compatible local Lyquid deployment and does not use real assets.
+For a reproducible local synthetic Lyquor devnet, see [devnet/README.md](devnet/README.md), then follow [the reviewed-task quickstart](docs/reviewed-task-quickstart.md). It runs the requester, provider, and reviewer workflow with distinct test accounts, confirms each exact operation in authoritative state, and explains how to diagnose uncertain outcomes. The example requires a compatible local Lyquid deployment and does not use real assets.
 
 ## Confirm operations
 
