@@ -130,3 +130,7 @@ The default Rust cache is intentionally outside the repository. When the checkou
 ## Security boundary
 
 The devnet is deliberately synthetic and loopback-only. It uses unlocked local test accounts for the quickstart. It must not be exposed to a public network, used with real assets, or treated as production custody infrastructure.
+
+## Use four process-separated agents
+
+After the devnet is running, see [the independent agent walkthrough](../docs/independent-agents.md) to execute every authoritative operation in a separate process with a caller-held local test key isolated to that role.

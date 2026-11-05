@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Examples
+
+- Added a four-process independent-agent walkthrough using role-isolated caller-held local Cast test keys and exact authoritative reconciliation.
+
 ## 0.7.1 — 2026-11-06
 
 ### Documentation and examples
