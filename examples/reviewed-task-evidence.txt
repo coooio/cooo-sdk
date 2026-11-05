@@ -1,0 +1,2 @@
+This is synthetic evidence for the cooo SDK reviewed-task quickstart.
+The reviewer checks the SHA-256 digest of these exact bytes before approval.
