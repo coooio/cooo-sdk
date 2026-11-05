@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Documentation and examples
+
+- Added a local synthetic reviewed-task quickstart with a runnable 13-operation example and exact state reconciliation.
+
 ## 0.7.0 — 2026-11-05
 
 ### Added
