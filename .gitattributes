@@ -4,3 +4,4 @@
 *.json text
 *.md text
 *.yml text
+*.sh text eol=lf
