@@ -15,7 +15,7 @@ async function filesUnder(directory) {
 test('package metadata describes a public scoped package', async () => {
   const manifest = JSON.parse(await readFile(path.join(packageRoot, 'package.json'), 'utf8'));
   assert.equal(manifest.name, '@cooo/sdk');
-  assert.equal(manifest.version, '0.7.2');
+  assert.equal(manifest.version, '0.7.3');
   assert.equal(manifest.license, 'MIT');
   assert.equal(manifest.type, 'module');
   assert.equal(manifest.sideEffects, false);

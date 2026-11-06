@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.3 — 2026-11-06
+
+### Changed
+
+- Migrated protected npm releases from a long-lived granular token to npm Trusted Publishing with GitHub Actions OIDC.
+- Updated CI and release actions to Node 24-compatible versions.
+
 ## 0.7.2 — 2026-11-06
 
 ### Examples
