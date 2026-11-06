@@ -38,7 +38,5 @@ jobs:
               core.setFailed(`Tag v${tag} does not match package version ${pkg.version}.`);
             }
       - run: npm pack --dry-run
-      # npm Trusted Publishing uses the GitHub Actions OIDC identity.
-      # No long-lived NPM_TOKEN is required or read by this job.
       - run: npm publish --access public
 

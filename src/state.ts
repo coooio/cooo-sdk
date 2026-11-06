@@ -1,3 +1,5 @@
+/** Validation for authoritative cooo state responses. */
+
 import { CoooSdkError } from './error.js';
 import type { CoooState } from './types.js';
 import { isAddress, isDecimalAmount, isHex32 } from './validation.js';

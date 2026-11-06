@@ -1,3 +1,5 @@
+/** Canonical Solidity ABI encoding for cooo operation arguments. */
+
 import { CoooSdkError } from './error.js';
 import type { AbiValue } from './abi.js';
 import { UINT256_LIMIT, assertAddress, assertHex32 } from './validation.js';

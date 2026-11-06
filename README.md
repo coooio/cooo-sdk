@@ -29,21 +29,28 @@ if (!state.ledger.conserved) {
 }
 ```
 
-Trusted mutations require both deployment pins. The SDK rediscovers and verifies the deployment before state reads and submissions.
+Mutations require both deployment pins. The SDK rediscovers and verifies the deployment before state reads and submissions.
 
-See [docs/compatibility.md](docs/compatibility.md) for protocol, runtime, and deployment-pin policy. The protocol identity is:
+Protocol identity:
 
 ```text
 cooo-local-v0.3-terms-bound-review
 ```
 
-## Run a reviewed-task walkthrough
+See [docs/compatibility.md](docs/compatibility.md) for protocol, runtime, and deployment-pin policy.
 
-For a reproducible local synthetic Lyquor devnet, see [devnet/README.md](devnet/README.md), then follow [the reviewed-task quickstart](docs/reviewed-task-quickstart.md). For four process-separated caller-held agents, see [the independent agent walkthrough](docs/independent-agents.md). It runs the requester, provider, and reviewer workflow with distinct test accounts, confirms each exact operation in authoritative state, and explains how to diagnose uncertain outcomes. The example requires a compatible local Lyquid deployment and does not use real assets.
+## Run a reviewed-task workflow
+
+Start the bundled local Lyquor devnet with [devnet/README.md](devnet/README.md), then run either:
+
+- [Reviewed-task quickstart](docs/reviewed-task-quickstart.md) — one script controls four local test principals.
+- [Independent agent walkthrough](docs/independent-agents.md) — every authoritative operation runs in a role-isolated process with a caller-held test key.
+
+Both workflows confirm the exact caller, operation ID, action, amount, digest, and scopes in authoritative state.
 
 ## Confirm operations
 
-A transaction hash only shows that an envelope was accepted by the endpoint. It is not application success. Confirm the authoritative operation:
+A transaction hash only says that an endpoint accepted an envelope. Confirm the operation itself:
 
 ```ts
 const submission = await sdk.submitRawTransaction(rawTransaction, transaction.deployment);
@@ -57,7 +64,7 @@ const confirmation = await sdk.waitForOperation(
 console.log(confirmation.operation);
 ```
 
-`waitForOperation` matches caller, operation ID, action, task, counterparty, amount, fee, digest, and scopes. If the same caller and operation ID committed a different payload, it returns a changed-intent conflict.
+If the same caller and operation ID committed a different payload, `waitForOperation` returns a changed-intent conflict.
 
 ## Use a caller-held signer
 
@@ -70,16 +77,11 @@ const sdk = new CoooSdk({
   stateUrl: 'https://example.invalid/api/state',
   expectedLyquidId,
   expectedContract,
-  transactionSender: async transaction => {
-    // Verify consent, chain, recipient, gas, and deployment identity.
-    return wallet.submit(transaction);
-  },
+  transactionSender: async transaction => wallet.submit(transaction),
 });
 ```
 
-The SDK does not provide custody, a production wallet adapter, or a consent system.
-
-For local synthetic integration, `@cooo/sdk/local-cast-signer` wraps a caller-controlled Foundry Cast wallet and passes the key through stdin:
+For local integration, `@cooo/sdk/local-cast-signer` wraps a caller-controlled Foundry Cast wallet and passes the key through stdin:
 
 ```ts
 import { LocalCastSigner } from '@cooo/sdk/local-cast-signer';
@@ -95,19 +97,13 @@ const signer = new LocalCastSigner({
 
 Pass an `AbortSignal` to the constructor to cancel all requests. `waitForState` and `waitForOperation` also accept a per-call signal.
 
-`CoooSdkError` exposes:
-
 ```ts
 error.code;       // invalid_argument, http_error, rpc_error, timeout, state_validation, aborted
-error.details;    // immutable endpoint, status, deployment, and intent context
+error.details;    // endpoint, status, deployment, and intent context
 error.retryable;  // conservative transport-retry classification
 ```
 
-A timeout or unknown response is not proof that an operation failed. Reconcile the exact operation intent before retrying.
-
-## API reference
-
-See [docs/api.md](docs/api.md) for the method overview; generated TypeScript declarations provide the exact signatures.
+A timeout or missing response is an unknown outcome. Reconcile authoritative state before retrying.
 
 ## Development
 
@@ -118,7 +114,7 @@ npm run build
 npm test
 ```
 
-Tests import generated files from `dist`, so build before running them after source changes. See [CONTRIBUTING.md](CONTRIBUTING.md) for pull-request expectations and [SECURITY.md](SECURITY.md) for vulnerability reporting.
+Tests import generated files from `dist`, so build before running them after source changes. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 ## License
 

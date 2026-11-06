@@ -1,67 +1,55 @@
 # Independent agent quickstart
 
-This walkthrough runs the reviewed-task protocol with one separate Node.js process for each authoritative operation. Each process receives only its role principal address and caller-held local test key. It prepares one transaction, signs it with Foundry Cast, submits the raw envelope, and confirms the exact authoritative operation.
-
-Process separation demonstrates the SDK's caller-held authority boundary. It does not prove that four organizations are independently operated, and it is not production key custody.
+This walkthrough assigns every authoritative operation to a separate Node.js process. Each process receives one role address and one caller-held local test key, prepares a deployment-bound transaction, signs it with Foundry Cast, submits the raw envelope, and confirms the exact authoritative operation.
 
 ## Prerequisites
 
-Complete [the local synthetic devnet](../devnet/README.md) and install Foundry Cast as part of Lyquor LDK 0.8.0. Build the SDK once:
+Start [the local devnet](../devnet/README.md), then build the SDK:
 
 ```sh
 npm ci --ignore-scripts
 npm run build
 ```
 
-The default signer path uses `devnet/cast-stdin.sh` so Cast receives the local test key through an interactive PTY and the key never appears in a process argument. On Windows this helper runs through `SEEDUbuntu` WSL; set `COOO_CAST_COMMAND`, `COOO_CAST_PREFIX`, `COOO_WSL_DISTRIBUTION`, or `COOO_CAST_BIN` for a different local Cast installation.
+The default signer path uses `devnet/cast-stdin.sh`, which passes the key to Cast through an interactive PTY and never places it in a process argument. On Windows, the helper runs through `SEEDUbuntu` WSL. Set `COOO_CAST_COMMAND`, `COOO_CAST_PREFIX`, `COOO_WSL_DISTRIBUTION`, or `COOO_CAST_BIN` to use another local Cast installation.
 
-## Run four process-separated agents
+## Run the workflow
 
-Use four publicly known local Anvil/Hardhat devnet keys that control the first four accounts exposed by your Lyquor node. Never use real keys. In PowerShell:
-
-```powershell
-$env:COOO_OPERATOR_PRIVATE_KEY = "<operator-local-test-key>"
-$env:COOO_REQUESTER_PRIVATE_KEY = "<requester-local-test-key>"
-$env:COOO_PROVIDER_PRIVATE_KEY = "<provider-local-test-key>"
-$env:COOO_REVIEWER_PRIVATE_KEY = "<reviewer-local-test-key>"
-node devnet/run-independent-agents.mjs --new
-```
-
-In a POSIX shell:
+Use four publicly known local Anvil/Hardhat test keys that control the first four accounts exposed by the node.
 
 ```sh
-export COOO_OPERATOR_PRIVATE_KEY='<operator-local-test-key>'
-export COOO_REQUESTER_PRIVATE_KEY='<requester-local-test-key>'
-export COOO_PROVIDER_PRIVATE_KEY='<provider-local-test-key>'
-export COOO_REVIEWER_PRIVATE_KEY='<reviewer-local-test-key>'
+export COOO_OPERATOR_PRIVATE_KEY='<operator-test-key>'
+export COOO_REQUESTER_PRIVATE_KEY='<requester-test-key>'
+export COOO_PROVIDER_PRIVATE_KEY='<provider-test-key>'
+export COOO_REVIEWER_PRIVATE_KEY='<reviewer-test-key>'
 node devnet/run-independent-agents.mjs --new
 ```
 
-The coordinator first creates `.cooo-devnet/independent-plan.json` without any private key. It then starts four child processes in role order. Before each child starts, all four role keys are removed from that child's environment and only `COOO_AGENT_PRIVATE_KEY` for the selected role is injected.
+PowerShell users can assign the same four environment variables before running the command.
+
+The coordinator writes a secret-free `.cooo-devnet/independent-plan.json`, then launches one child process for each of the 13 plan steps in protocol order. Every child receives only `COOO_AGENT_PRIVATE_KEY` for its role.
 
 Each child uses:
 
-1. `prepareTransaction(...)` for an exact deployment-bound transaction.
-2. `LocalCastSigner` to verify key control and sign locally.
-3. `submitRawTransaction(...)` for an explicit submitted transport result.
-4. `waitForOperation(...)` to confirm the exact caller, operation ID, action, task, amount, digest, and scopes.
+1. `prepareTransaction(...)`.
+2. `LocalCastSigner`.
+3. `submitRawTransaction(...)`.
+4. `waitForOperation(...)`.
 
 No child uses unlocked `eth_sendTransaction`.
 
-## Run agents on separate hosts
+## Separate hosts
 
-Copy the secret-free `independent-plan.json` to each operator. Each `steps` entry in that file gives the required role and step label. On the host responsible for a role, set only that role's key and execute the steps in the order listed in the plan:
+Copy `independent-plan.json` to each operator. Each `steps` entry identifies the role and step label:
 
 ```sh
-COOO_AGENT_PRIVATE_KEY='<role-local-test-key>' \
+COOO_AGENT_PRIVATE_KEY='<role-test-key>' \
 node examples/independent-agent.mjs \
   --plan /path/to/independent-plan.json \
   --role <operator|requester|provider|reviewer> \
-  --step <step-label-from-plan>
+  --step <step-label>
 ```
 
-Each process can resume safely: it skips an already confirmed operation only when the exact authoritative intent matches and rejects a changed payload under the same caller and operation ID. Do not run a later state-machine step before its authoritative prerequisites are confirmed.
+Run the steps in the order listed in the plan. A process skips an operation only after exact authoritative intent matching; the same caller and operation ID with a different payload is rejected.
 
-## Security boundary
-
-The public Anvil/Hardhat keys are intentionally public test keys. They must never be used with real assets. The local Cast adapter is for synthetic integration and is not an HSM, browser wallet, cloud KMS, or enterprise custody service.
+Use only public local test keys. Keys remain with the agent operator and are never sent to the SDK.

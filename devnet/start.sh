@@ -47,8 +47,7 @@ if [[ "$ready" != true ]]; then
   exit 1
 fi
 
-# The node HTTP service can accept health calls before the Compose bootstrap has
-# finished restoring and registering Lyquids. Wait for that one-shot service.
+# Wait for the one-shot Compose bootstrap to finish registering Lyquids.
 for _ in $(seq 1 60); do
   if ! docker compose -f "$COMPOSE_FILE" ps | grep -q setup-devnet; then
     break

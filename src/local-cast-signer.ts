@@ -1,3 +1,5 @@
+/** Caller-held Foundry Cast signer for local integration. */
+
 import { spawn } from 'node:child_process';
 import { CoooSdkError } from './error.js';
 import type { Address, Hex, SignableTransaction } from './types.js';
@@ -16,14 +18,7 @@ const PRIVATE_KEY_PATTERN = /^0x[0-9a-fA-F]{64}$/;
 const RAW_TRANSACTION_PATTERN = /^0x[0-9a-fA-F]{4,}$/;
 const ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 
-/**
- * Local integration adapter for an Agent-controlled Foundry Cast wallet.
- *
- * This adapter exists to exercise real secp256k1 transaction signing against the
- * synthetic Lyquor node. It is not a production hardware-wallet or enterprise
- * signing service. The key is supplied by the caller and passed only to the
- * local Cast executable through its interactive stdin prompt.
- */
+/** Signs transactions with a caller-held Foundry Cast key. */
 export class LocalCastSigner {
   readonly expectedAddress: Address;
   private readonly readPrivateKey: () => string | Promise<string>;

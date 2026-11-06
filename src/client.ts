@@ -1,3 +1,5 @@
+/** Typed client for deployment discovery, operations, and reconciliation. */
+
 import { SELECTORS, type AbiValue, type CoooMethod } from './abi.js';
 import { encodeParameters } from './abi-encoder.js';
 import { CoooSdkError } from './error.js';

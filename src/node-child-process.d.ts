@@ -1,3 +1,5 @@
+/** Node.js child-process declarations used by the local signer. */
+
 declare module 'node:child_process' {
   export interface ChildProcessStream {
     on(event: 'data', listener: (chunk: string | Buffer) => void): ChildProcessStream;

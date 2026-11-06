@@ -1,3 +1,5 @@
+/** Public wire and SDK contract types. */
+
 export type Address = string;
 export type Hex = string;
 export type Uint256 = bigint;

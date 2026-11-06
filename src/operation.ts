@@ -1,3 +1,5 @@
+/** Exact caller and operation-intent reconciliation helpers. */
+
 import { sameAddress, sameDigest } from './validation.js';
 import type {
   Address,

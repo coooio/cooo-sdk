@@ -1,3 +1,5 @@
+/** JSON-RPC quantity parsing for canonical Ethereum responses. */
+
 import { CoooSdkError } from './error.js';
 
 export type JsonRpcResponse =

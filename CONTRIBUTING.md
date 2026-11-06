@@ -23,6 +23,6 @@ Tests import generated files from `dist/`, so run `npm run build` before `npm te
 
 - Add or update focused tests for every behavior change.
 - Preserve strict TypeScript checking.
-- Update `CHANGELOG.md` under the appropriate unreleased or release-candidate heading.
+- Update `CHANGELOG.md` under the `Unreleased` section.
 - Explain compatibility and migration effects for public API changes.
 - Keep documentation in English.

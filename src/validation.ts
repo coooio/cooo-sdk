@@ -1,3 +1,5 @@
+/** Primitive validation shared by public client boundaries. */
+
 import { CoooSdkError } from './error.js';
 import type { Address, Hex } from './types.js';
 

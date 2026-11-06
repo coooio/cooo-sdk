@@ -1,3 +1,5 @@
+/** Structured SDK error type shared by validation and transport layers. */
+
 export type CoooSdkErrorCode =
   | 'invalid_argument'
   | 'http_error'

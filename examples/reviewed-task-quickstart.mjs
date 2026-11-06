@@ -57,8 +57,7 @@ const workflow = buildAgentHeldWorkflow({
   deploymentTag,
 });
 
-// Typed SDK methods use eth_sendTransaction only on a loopback devnet with
-// unlocked test accounts. For a remote endpoint, supply a caller-held signer.
+// This example uses unlocked accounts only on a loopback devnet.
 const sdk = new CoooSdk({
   rpcUrl,
   infoUrl,
@@ -97,8 +96,7 @@ for (const step of workflow) {
     throw error;
   }
 
-  // A transaction hash is only a transport receipt. Confirm the exact caller,
-  // operation ID, action, task, amount, digest and scopes in authoritative state.
+  // Confirm the exact authoritative intent after transport acceptance.
   const { operation, state } = await sdk.waitForOperation(
     caller,
     step.operationId,

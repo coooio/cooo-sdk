@@ -1,3 +1,5 @@
+/** cooo ABI values, method selectors, and typed method names. */
+
 export type AbiValue = string | bigint | boolean | readonly string[] | readonly bigint[];
 
 export const SELECTORS = {
