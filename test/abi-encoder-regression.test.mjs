@@ -8,9 +8,7 @@ import { SELECTORS } from '../dist/abi.js';
  * Byte-exact regression suite for the canonical Solidity ABI encoder.
  *
  * The `expected` blobs are independent ground truth from a reference encoder
- * (canonical head/tail ABI rules; keccak selectors cross-checked against
- * `cast sig` values recorded from live devnet transactions: deposit
- * 0x8e27d719, committee_config 0x15df3c73). Every case was additionally
+ * implementing canonical head/tail ABI rules. Every case was additionally
  * round-trip decoded (decode(encode(x)) === x) before being frozen here, so
  * the offsets inside each blob are internally consistent by construction.
  *
@@ -64,8 +62,11 @@ test('every encoding is whole 32-byte words and matches the reference length', (
   }
 });
 
-test('selectors stay pinned to keccak values observed in live devnet transactions', () => {
-  // Cross-anchor: selector drift fails loudly here instead of mis-encoding in silence.
+test('selector constants stay pinned to their frozen values', () => {
+  // Drift alarm: any change to these constants fails loudly here instead of
+  // silently changing wire compatibility. As an external cross-check, keccak256
+  // of the canonical signature `deposit(string,uint256)` independently
+  // evaluates to SELECTORS.deposit below.
   assert.equal(SELECTORS.deposit, '0x8e27d719');
-  assert.equal(typeof SELECTORS.create === 'string' && SELECTORS.create.length, 10);
+  assert.equal(SELECTORS.create, '0xc1f995ed');
 });
