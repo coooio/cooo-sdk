@@ -21,9 +21,9 @@ curl --fail --location --retry 3 \
 echo 'a82a6994cc125134d85f6abfdc7f563ff5d6c322ef7b6a95c9656b09bc6be399  '"$temporary"'/tools.tar.gz' | sha256sum -c -
 echo 'b33cc20905fb35ee07d96e959495906a9b5a161a1c681b028415d9733033e21b  '"$temporary"'/ldk.tar.gz' | sha256sum -c -
 
-mkdir -p "$temporary/extracted/ldk" "$destination/bin"
+mkdir -p "$temporary/extracted" "$destination/bin"
 tar -xzf "$temporary/tools.tar.gz" -C "$temporary/extracted"
-tar -xzf "$temporary/ldk.tar.gz" -C "$temporary/extracted/ldk"
+tar -xzf "$temporary/ldk.tar.gz" -C "$temporary/extracted"
 for binary in lyquor ladle shaker lyquid-test-runner barstrainer; do
   install -m 755 "$temporary/extracted/${archive_name%.tar.gz}/$binary" "$destination/bin/$binary"
 done
