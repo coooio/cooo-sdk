@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Rejected `deliverProvider` evidence that does not match the assigned provider terms before marking work delivered.
+
 ## 0.7.3 — 2026-11-06
 
 - Migrated protected npm releases to Trusted Publishing with GitHub Actions OIDC.
