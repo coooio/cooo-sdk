@@ -1,0 +1,63 @@
+name: Devnet E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/devnet-e2e.yml'
+      - 'backend/cooo-lyquid/**'
+      - 'devnet/**'
+      - 'examples/agent-held-workflow.mjs'
+      - 'devnet/provider-digest-e2e.mjs'
+      - 'test/run-devnet-digest-e2e.sh'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/devnet-e2e.yml'
+      - 'backend/cooo-lyquid/**'
+      - 'devnet/**'
+      - 'examples/agent-held-workflow.mjs'
+      - 'devnet/provider-digest-e2e.mjs'
+      - 'test/run-devnet-digest-e2e.sh'
+
+permissions:
+  contents: read
+
+env:
+  CARGO_BUILD_JOBS: 2
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  provider-digest:
+    name: Provider digest authoritative recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Install Rust 1.99
+        run: |
+          if ! command -v rustup >/dev/null 2>&1; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |
+              sh -s -- --default-toolchain 1.99.0 --profile minimal --no-modify-path -y
+          fi
+          rustup toolchain install 1.99.0
+          rustup default 1.99.0
+          rustup target add wasm32-unknown-unknown --toolchain 1.99.0
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: Install pinned Lyquor LDK 0.8.0
+        run: |
+          destination="$RUNNER_TEMP/cooo-ldk-080"
+          bash devnet/install-ldk-080.sh "$destination"
+          echo "COOO_LDK_HOME=$destination" >> "$GITHUB_ENV"
+      - run: bash test/run-devnet-digest-e2e.sh
