@@ -85,7 +85,7 @@ devnet_pid=$!
 rpc_url=''
 info_url=''
 state_url=''
-for _ in $(seq 1 24); do
+for _ in $(seq 1 150); do
   if ! kill -0 "$devnet_pid" >/dev/null 2>&1; then
     devnet_status=0
     wait "$devnet_pid" || devnet_status=$?
@@ -94,20 +94,36 @@ for _ in $(seq 1 24); do
     exit 1
   fi
   if [[ -s "$metadata" ]]; then
-    readarray -t endpoints < <(read_metadata rpcUrl infoUrl stateUrl)
-    rpc_url="${endpoints[0]}"
-    info_url="${endpoints[1]}"
-    state_url="${endpoints[2]}"
-    if probe "$info_url" "$work/info.json" && probe "$state_url" "$work/state.json"; then
-      break
-    fi
+    break
   fi
   sleep 2
 done
 
-if [[ -z "$rpc_url" ]] || [[ -z "$info_url" ]] || [[ -z "$state_url" ]] ||
-  ! probe "$info_url" "$work/info.json" ||
-  ! probe "$state_url" "$work/state.json"; then
+if [[ ! -s "$metadata" ]]; then
+  diagnose_proxy
+  exit 1
+fi
+
+rpc_url="$(read_metadata rpcUrl)"
+info_url="$(read_metadata infoUrl)"
+state_url="$(read_metadata stateUrl)"
+ready=false
+for _ in $(seq 1 40); do
+  if ! kill -0 "$devnet_pid" >/dev/null 2>&1; then
+    devnet_status=0
+    wait "$devnet_pid" || devnet_status=$?
+    echo "Devnet process exited with status $devnet_status." >&2
+    cat "$work/devnet.log" >&2
+    exit 1
+  fi
+  if probe "$info_url" "$work/info.json" && probe "$state_url" "$work/state.json"; then
+    ready=true
+    break
+  fi
+  sleep 2
+done
+
+if [[ "$ready" != true ]]; then
   diagnose_proxy
   exit 1
 fi
