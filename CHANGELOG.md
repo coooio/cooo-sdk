@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Typed operations now validate callers, participants, digests, scopes, amounts, and booleans before network discovery or transport.
+
 ### Fixed
 
 - Rejected `deliverProvider` evidence that does not match the assigned provider terms before marking work delivered.

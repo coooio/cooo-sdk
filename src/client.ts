@@ -51,15 +51,36 @@ export class CoooSdk {
     this.infoUrl = assertEndpoint(options.infoUrl, 'infoUrl').toString();
     this.stateUrl = assertEndpoint(options.stateUrl, 'stateUrl').toString();
     this.fetchImpl = options.fetchImpl ?? fetch;
-    if (options.transactionSender !== undefined) this.transactionSender = options.transactionSender;
+    if (typeof this.fetchImpl !== 'function') {
+      throw new CoooSdkError('fetchImpl must be a function', 'invalid_argument');
+    }
+    if (options.transactionSender !== undefined) {
+      if (typeof options.transactionSender !== 'function') {
+        throw new CoooSdkError('transactionSender must be a function', 'invalid_argument');
+      }
+      this.transactionSender = options.transactionSender;
+    }
     if (options.transactionSender && (!options.expectedLyquidId || !options.expectedContract)) {
       throw new CoooSdkError('external signing requires an explicit deployment binding', 'invalid_argument');
     }
     this.timeoutMs = options.timeoutMs ?? 30_000;
-    if (options.signal !== undefined) this.signal = options.signal;
-    if (options.expectedLyquidId !== undefined) this.expectedLyquidId = options.expectedLyquidId;
-    if (options.expectedContract !== undefined) this.expectedContract = options.expectedContract;
     assertPositiveMilliseconds(this.timeoutMs, 'timeoutMs');
+    if (options.signal !== undefined) {
+      if (!(options.signal instanceof AbortSignal)) {
+        throw new CoooSdkError('signal must be an AbortSignal', 'invalid_argument');
+      }
+      this.signal = options.signal;
+    }
+    if (options.expectedLyquidId !== undefined) {
+      if (typeof options.expectedLyquidId !== 'string' || options.expectedLyquidId.length === 0) {
+        throw new CoooSdkError('expectedLyquidId must be a non-empty string', 'invalid_argument');
+      }
+      this.expectedLyquidId = options.expectedLyquidId;
+    }
+    if (options.expectedContract !== undefined) {
+      assertAddress(options.expectedContract, 'expectedContract');
+      this.expectedContract = options.expectedContract;
+    }
   }
 
   private async requestJson(url: string, init?: RequestInit): Promise<unknown> {
@@ -173,6 +194,9 @@ export class CoooSdk {
   ): Promise<CoooState> {
     assertPositiveMilliseconds(timeoutMs, 'timeoutMs');
     assertPositiveMilliseconds(intervalMs, 'intervalMs');
+    if (typeof predicate !== 'function') {
+      throw new CoooSdkError('predicate must be a function', 'invalid_argument');
+    }
     const deadline = Date.now() + timeoutMs;
     for (;;) {
       if (signal?.aborted || this.signal?.aborted) {
@@ -195,6 +219,8 @@ export class CoooSdk {
     intervalMs = 200,
     signal?: AbortSignal,
   ): Promise<OperationConfirmation> {
+    assertAddress(caller, 'caller');
+    assertIdentifier(operationId, 'operationId');
     assertPositiveMilliseconds(timeoutMs, 'timeoutMs');
     assertPositiveMilliseconds(intervalMs, 'intervalMs');
     const deadline = Date.now() + timeoutMs;
@@ -265,8 +291,12 @@ export class CoooSdk {
     if (this.expectedLyquidId === undefined || this.expectedContract === undefined) {
       throw new CoooSdkError('transaction preparation requires both Lyquid and contract deployment pins', 'invalid_argument');
     }
-    await this.discover();
     assertAddress(from, 'from');
+    if (typeof method !== 'string' || !(method in SELECTORS)) {
+      throw new CoooSdkError('method must be a supported cooo operation', 'invalid_argument');
+    }
+    const data = SELECTORS[method] + encodeParameters(types, values);
+    await this.discover();
     if (this.expectedLyquidId !== undefined || this.expectedContract !== undefined) await this.getState();
     const [chainId, nonce, gasPrice] = await Promise.all([
       this.rpc('eth_chainId', []),
@@ -279,7 +309,7 @@ export class CoooSdk {
     return Object.freeze({
       from,
       to: this.contractAddress,
-      data: SELECTORS[method] + encodeParameters(types, values),
+      data,
       gas: '0x249f00',
       chainId: parsedChainId,
       nonce: parsedNonce,
@@ -294,8 +324,20 @@ export class CoooSdk {
 
   async sendRawTransaction(rawTransaction: Hex, expectedDeployment?: DeploymentIdentity): Promise<Hex> {
     this.requireMutationBinding();
-    if (!/^0x(?:02[0-9a-fA-F]{2})?[0-9a-fA-F]{6,}$/.test(rawTransaction)) {
+    if (typeof rawTransaction !== 'string' || !/^0x(?:02[0-9a-fA-F]{2})?[0-9a-fA-F]{6,}$/.test(rawTransaction)) {
       throw new CoooSdkError('raw transaction must be a hexadecimal envelope', 'invalid_argument');
+    }
+    if (expectedDeployment !== undefined) {
+      if (typeof expectedDeployment.lyquidId !== 'string' || expectedDeployment.lyquidId.length === 0) {
+        throw new CoooSdkError('expectedDeployment.lyquidId must be a non-empty string', 'invalid_argument');
+      }
+      if (typeof expectedDeployment.contract !== 'string') {
+        throw new CoooSdkError('expectedDeployment.contract must be a 20-byte address', 'invalid_argument');
+      }
+      assertAddress(expectedDeployment.contract, 'expectedDeployment.contract');
+      if (expectedDeployment.protocolVersion !== COOO_PROTOCOL_VERSION) {
+        throw new CoooSdkError('expectedDeployment.protocolVersion does not match the SDK protocol', 'invalid_argument');
+      }
     }
     await this.discover();
     if (expectedDeployment) {
@@ -340,9 +382,12 @@ export class CoooSdk {
     values: readonly AbiValue[],
   ): Promise<Hex> {
     this.requireMutationBinding();
-    await this.discover();
     assertAddress(from, 'from');
+    if (typeof method !== 'string' || !(method in SELECTORS)) {
+      throw new CoooSdkError('method must be a supported cooo operation', 'invalid_argument');
+    }
     const data = SELECTORS[method] + encodeParameters(types, values);
+    await this.discover();
     if (this.expectedLyquidId !== undefined || this.expectedContract !== undefined) await this.getState();
     return await this.unlockedDevelopmentSubmit({
       from, to: this.contractAddress, data, gas: '0x249f00',
@@ -388,7 +433,11 @@ export class CoooSdk {
     provider: Address,
     scopes: readonly string[],
   ): Promise<Hex> {
+    assertAddress(provider, 'provider');
     assertIdentifier(operationId, 'operationId');
+    if (!Array.isArray(scopes)) {
+      throw new CoooSdkError('scopes must be an array', 'invalid_argument');
+    }
     scopes.forEach(assertScope);
     return this.send('grantAuthority', from, ['string', 'address', 'string[]'], [operationId, provider, scopes]);
   }
@@ -402,6 +451,8 @@ export class CoooSdk {
     cancellationFee: Uint256,
     expectedDigest: Hex,
   ): Promise<Hex> {
+    assertAddress(provider, 'provider');
+    assertHex32(expectedDigest, 'expectedDigest');
     assertIdentifier(operationId, 'operationId');
     assertAmount(amount, 'amount');
     assertAmount(cancellationFee, 'cancellationFee');
@@ -424,6 +475,8 @@ export class CoooSdk {
     cancellationFee: Uint256,
     expectedDigest: Hex,
   ): Promise<Hex> {
+    assertAddress(provider, 'provider');
+    assertHex32(expectedDigest, 'expectedDigest');
     assertIdentifier(operationId, 'operationId');
     assertAmount(amount, 'amount');
     assertAmount(cancellationFee, 'cancellationFee');
@@ -444,6 +497,7 @@ export class CoooSdk {
   }
 
   async deliverTask(from: Address, operationId: string, taskId: string, digest: Hex): Promise<Hex> {
+    assertHex32(digest, 'digest');
     assertIdentifier(operationId, 'operationId');
     assertIdentifier(taskId, 'taskId');
     return this.send('deliver', from, ['string', 'string', 'bytes32'], [operationId, taskId, digest]);
@@ -469,6 +523,8 @@ export class CoooSdk {
     amount: Uint256,
     digest: Hex,
   ): Promise<Hex> {
+    assertAddress(provider, 'provider');
+    assertHex32(digest, 'digest');
     assertIdentifier(operationId, 'operationId');
     assertIdentifier(taskId, 'taskId');
     assertAmount(amount, 'amount');
@@ -486,6 +542,7 @@ export class CoooSdk {
     taskId: string,
     provider: Address,
   ): Promise<Hex> {
+    assertAddress(provider, 'provider');
     assertIdentifier(operationId, 'operationId');
     assertIdentifier(taskId, 'taskId');
     return this.send('dispatchProvider', from, ['string', 'string', 'address'], [operationId, taskId, provider]);
@@ -498,6 +555,8 @@ export class CoooSdk {
     provider: Address,
     digest: Hex,
   ): Promise<Hex> {
+    assertAddress(provider, 'provider');
+    assertHex32(digest, 'digest');
     assertIdentifier(operationId, 'operationId');
     assertIdentifier(taskId, 'taskId');
     return this.send(
@@ -514,6 +573,7 @@ export class CoooSdk {
     taskId: string,
     provider: Address,
   ): Promise<Hex> {
+    assertAddress(provider, 'provider');
     assertIdentifier(operationId, 'operationId');
     assertIdentifier(taskId, 'taskId');
     return this.send('acceptProvider', from, ['string', 'string', 'address'], [operationId, taskId, provider]);
@@ -525,6 +585,7 @@ export class CoooSdk {
     taskId: string,
     provider: Address,
   ): Promise<Hex> {
+    assertAddress(provider, 'provider');
     assertIdentifier(operationId, 'operationId');
     assertIdentifier(taskId, 'taskId');
     return this.send('withdrawProvider', from, ['string', 'string', 'address'], [operationId, taskId, provider]);
@@ -548,6 +609,9 @@ export class CoooSdk {
     termsVersion: bigint,
     termsDigest: Hex,
   ): Promise<Hex> {
+    assertAddress(provider, 'provider');
+    assertHex32(expectedDigest, 'expectedDigest');
+    assertHex32(termsDigest, 'termsDigest');
     assertIdentifier(operationId, 'operationId');
     assertIdentifier(taskId, 'taskId');
     assertAmount(amount, 'amount');
@@ -570,6 +634,8 @@ export class CoooSdk {
     verifier: Address,
     reward: Uint256,
   ): Promise<Hex> {
+    assertAddress(producer, 'producer');
+    assertAddress(verifier, 'verifier');
     assertIdentifier(operationId, 'operationId');
     assertIdentifier(taskId, 'taskId');
     assertAmount(reward, 'reward');
@@ -592,6 +658,13 @@ export class CoooSdk {
     evidenceDigest: Hex,
     approved: boolean,
   ): Promise<Hex> {
+    assertAddress(producer, 'producer');
+    assertAddress(verifier, 'verifier');
+    assertHex32(termsDigest, 'termsDigest');
+    assertHex32(evidenceDigest, 'evidenceDigest');
+    if (typeof approved !== 'boolean') {
+      throw new CoooSdkError('approved must be a boolean', 'invalid_argument');
+    }
     assertIdentifier(operationId, 'operationId');
     assertIdentifier(taskId, 'taskId');
     assertSmallUint(termsVersion, 'termsVersion');
@@ -610,6 +683,8 @@ export class CoooSdk {
     producer: Address,
     verifier: Address,
   ): Promise<Hex> {
+    assertAddress(producer, 'producer');
+    assertAddress(verifier, 'verifier');
     assertIdentifier(operationId, 'operationId');
     assertIdentifier(taskId, 'taskId');
     return this.send(
@@ -627,6 +702,8 @@ export class CoooSdk {
     producer: Address,
     verifier: Address,
   ): Promise<Hex> {
+    assertAddress(producer, 'producer');
+    assertAddress(verifier, 'verifier');
     assertIdentifier(operationId, 'operationId');
     assertIdentifier(taskId, 'taskId');
     return this.send(

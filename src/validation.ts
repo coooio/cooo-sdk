@@ -38,25 +38,25 @@ export function assertEndpoint(value: string, name: string): URL {
 }
 
 export function assertIdentifier(value: string, name: string): void {
-  if (!SAFE_IDENTIFIER.test(value)) {
+  if (typeof value !== 'string' || !SAFE_IDENTIFIER.test(value)) {
     throw new CoooSdkError(`${name} must match ${SAFE_IDENTIFIER.source}`, 'invalid_argument');
   }
 }
 
 export function assertScope(value: string): void {
-  if (!SAFE_SCOPE.test(value)) {
+  if (typeof value !== 'string' || !SAFE_SCOPE.test(value)) {
     throw new CoooSdkError(`scope must match ${SAFE_SCOPE.source}`, 'invalid_argument');
   }
 }
 
 export function assertSmallUint(value: bigint, name: string): void {
-  if (value <= 0n || value >= UINT64_EXCLUSIVE_LIMIT) {
+  if (typeof value !== 'bigint' || value <= 0n || value >= UINT64_EXCLUSIVE_LIMIT) {
     throw new CoooSdkError(`${name} must fit a positive uint64`, 'invalid_argument');
   }
 }
 
 export function assertAmount(value: bigint, name: string): void {
-  if (value < 0n || value >= UINT256_LIMIT) {
+  if (typeof value !== 'bigint' || value < 0n || value >= UINT256_LIMIT) {
     throw new CoooSdkError(`${name} must be a uint256 integer`, 'invalid_argument');
   }
 }
@@ -66,11 +66,11 @@ export function isDecimalAmount(value: unknown): value is string {
 }
 
 export function isAddress(value: string): boolean {
-  return /^0x[0-9a-fA-F]{40}$/.test(value);
+  return typeof value === 'string' && /^0x[0-9a-fA-F]{40}$/.test(value);
 }
 
 export function isHex32(value: string): boolean {
-  return /^0x[0-9a-fA-F]{64}$/.test(value);
+  return typeof value === 'string' && /^0x[0-9a-fA-F]{64}$/.test(value);
 }
 
 export function assertAddress(value: string, name: string): void {

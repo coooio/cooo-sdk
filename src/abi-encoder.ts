@@ -44,7 +44,7 @@ function encodeStringArray(values: readonly string[]): string {
 }
 
 export function encodeParameters(types: readonly string[], values: readonly AbiValue[]): string {
-  if (types.length !== values.length) {
+  if (!Array.isArray(types) || !Array.isArray(values) || types.length !== values.length) {
     throw new CoooSdkError('ABI type and value counts differ', 'invalid_argument');
   }
   const heads: string[] = [];
