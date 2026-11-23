@@ -39,6 +39,11 @@ cooo-local-v0.3-terms-bound-review
 
 See [docs/compatibility.md](docs/compatibility.md) for protocol, runtime, and deployment-pin policy.
 
+For reported Lyquor `v0.8.1` multi-node observations, see the [platform field
+notes](docs/lyquor-platform-notes.md) and [four-node oracle certification
+notes](docs/multi-node-validation.md). They are external observations, not the
+repository's supported single-node runtime.
+
 ## Run a reviewed-task workflow
 
 Start the bundled local Lyquor devnet with [devnet/README.md](devnet/README.md), then run either:
