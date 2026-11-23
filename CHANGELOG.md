@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added an isolated Docker devnet E2E workflow proving wrong provider evidence is rejected without authoritative state changes.
+
 ## 0.7.4 — 2026-11-23
 
 ### Added
