@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Added an operation recovery guide and a restart-safe local example for exact unknown-outcome reconciliation.
+
 ### Changed
 
 - Typed operations now validate callers, participants, digests, scopes, amounts, and booleans before network discovery or transport.
