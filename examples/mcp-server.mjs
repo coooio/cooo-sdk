@@ -70,6 +70,9 @@ function nextOperationId(toolName) {
 // operation identity so a client can reconcile safely after a lost response.
 function write(toolName, fn) {
   return async (args, client, env) => {
+    if (typeof env.caller !== 'string' || env.caller.length === 0) {
+      throw new Error('COOO_CALLER is required for write tools');
+    }
     if (args.operationId !== undefined) {
       if (typeof args.operationId !== 'string' || args.operationId.length === 0) {
         throw new Error('operationId must be a non-empty string');

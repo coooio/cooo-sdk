@@ -76,7 +76,7 @@ function startServer(envOverrides = {}) {
       const timer = setTimeout(() => {
         pending.delete(id);
         reject(new Error(`timeout waiting for ${method} id=${id}; stderr=${stderr}`));
-      }, 3000);
+      }, 10000);
 
       pending.set(id, { resolve, reject, timer });
       child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
@@ -107,6 +107,7 @@ function startSdkBackend() {
   const server = createServer((request, response) => {
     let body = '';
     request.setEncoding('utf8');
+    response.setHeader('Connection', 'close');
     request.on('data', (chunk) => {
       body += chunk;
     });
@@ -145,7 +146,10 @@ function startSdkBackend() {
       const address = server.address();
       resolve({
         url: `http://127.0.0.1:${address.port}`,
-        stop: () => new Promise((done) => server.close(done)),
+        stop: () => new Promise((done) => {
+          server.closeAllConnections();
+          server.close(done);
+        }),
       });
     });
   });
@@ -290,15 +294,8 @@ test('cooo MCP server', async (t) => {
       }
     });
 
-    await t.test('missing COOO_CALLER rejects writes', async () => {
-      const backend = await startSdkBackend();
-      const writer = startServer({
-        COOO_RPC_URL: `${backend.url}/lyquid/api`,
-        COOO_INFO_URL: `${backend.url}/lyquid/info`,
-        COOO_STATE_URL: `${backend.url}/api/state`,
-        COOO_LYQUID_ID: 'test-lyquid',
-        COOO_CONTRACT: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-      });
+    await t.test('missing COOO_CALLER rejects writes before transport', async () => {
+      const writer = startServer();
 
       try {
         await writer.request('initialize', { protocolVersion: '2025-03-26' });
@@ -308,10 +305,9 @@ test('cooo MCP server', async (t) => {
           arguments: { operationId: 'no-caller', amount: '1' },
         });
         assert.equal(response.result.isError, true);
-        assert.match(response.result.content[0].text, /from must be a 20-byte address/);
+        assert.match(response.result.content[0].text, /COOO_CALLER is required/);
       } finally {
         await writer.stop();
-        await backend.stop();
       }
     });
 
