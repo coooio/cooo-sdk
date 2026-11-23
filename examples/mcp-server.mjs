@@ -9,7 +9,10 @@ function timeoutFromEnv() {
   const raw = process.env.COOO_TIMEOUT_MS;
   if (raw === undefined || raw === '') return 30000;
   const parsed = Number(raw);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 30000;
+  if (!Number.isInteger(parsed) || parsed <= 0 || parsed > Number.MAX_SAFE_INTEGER) {
+    throw new Error('COOO_TIMEOUT_MS must be a positive integer');
+  }
+  return parsed;
 }
 
 const ENV = {
@@ -17,7 +20,7 @@ const ENV = {
   infoUrl: process.env.COOO_INFO_URL || 'http://127.0.0.1:8080/lyquid/info',
   stateUrl: process.env.COOO_STATE_URL || 'http://127.0.0.1:8080/api/state',
   timeoutMs: timeoutFromEnv(),
-  caller: process.env.COOO_CALLER || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  caller: process.env.COOO_CALLER || '',
   lyquidId: process.env.COOO_LYQUID_ID || '',
   contract: process.env.COOO_CONTRACT || '',
 };
@@ -63,12 +66,21 @@ function nextOperationId(toolName) {
   return `cooo-${toolName.replace(/^cooo_/, '')}-${Date.now().toString(36)}-${opSeq}`;
 }
 
-// Shared wrapper for every state-changing tool: resolves `from` and `operationId`.
+// Shared wrapper for every state-changing tool. The result includes the exact
+// operation identity so a client can reconcile safely after a lost response.
 function write(toolName, fn) {
   return async (args, client, env) => {
-    const given = args.operationId;
-    const operationId = typeof given === 'string' && given.length > 0 ? given : nextOperationId(toolName);
-    return fn(client, args, env.caller, operationId);
+    if (args.operationId !== undefined) {
+      if (typeof args.operationId !== 'string' || args.operationId.length === 0) {
+        throw new Error('operationId must be a non-empty string');
+      }
+    }
+    const operationId = args.operationId ?? nextOperationId(toolName);
+    const value = await fn(client, args, env.caller, operationId);
+    const result = value && typeof value === 'object' && !Array.isArray(value)
+      ? value
+      : { transactionHash: value };
+    return { ...result, operationId };
   };
 }
 
@@ -76,7 +88,10 @@ const obj = (properties, required = []) => ({ type: 'object', properties, requir
 const eq = (a, b) => String(a) === String(b);
 
 const P = {
-  operationId: { type: 'string', description: 'Optional idempotency key; generated when omitted.' },
+  operationId: {
+    type: 'string',
+    description: 'Optional idempotency key; returned with the write result when generated.',
+  },
   taskId: { type: 'string', description: 'Task id string.' },
   parentId: { type: 'string', description: 'Parent task id string.' },
   childId: { type: 'string', description: 'Child task id string.' },
@@ -160,7 +175,11 @@ const TOOLS = [
       if ((match.ledgerField === undefined) !== (match.equals === undefined)) {
         throw new Error('ledgerField and equals must be provided together');
       }
-      const timeoutMs = args.timeoutMs === undefined ? 30000 : Number(args.timeoutMs);
+      const timeoutMs = args.timeoutMs === undefined ? 30000 : args.timeoutMs;
+      if (typeof timeoutMs !== 'number' || !Number.isInteger(timeoutMs) ||
+          timeoutMs <= 0 || timeoutMs > Number.MAX_SAFE_INTEGER) {
+        throw new Error('timeoutMs must be a positive integer');
+      }
       return client.waitForState(buildPredicate(match), timeoutMs);
     },
   },
@@ -369,10 +388,15 @@ function serialize(value) {
     typeof item === 'bigint' ? item.toString() : item);
 }
 
+const SUPPORTED_PROTOCOL_VERSIONS = ['2024-11-05', '2025-03-26'];
+const DEFAULT_PROTOCOL_VERSION = SUPPORTED_PROTOCOL_VERSIONS.at(-1);
+
 function initializeResult(params) {
   const requested = params && typeof params.protocolVersion === 'string' ? params.protocolVersion : '';
   return {
-    protocolVersion: requested || '2024-11-05',
+    protocolVersion: SUPPORTED_PROTOCOL_VERSIONS.includes(requested)
+      ? requested
+      : DEFAULT_PROTOCOL_VERSION,
     capabilities: { tools: {} },
     serverInfo: { name: 'cooo-mcp', version: '0.1.0' },
   };

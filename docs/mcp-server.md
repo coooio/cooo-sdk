@@ -5,6 +5,9 @@ cooo SDK (from issue #10). It exposes read helpers and SDK write methods over
 newline-delimited JSON-RPC 2.0 on stdio, so an MCP-capable model or client can
 propose Lyquid operations with typed arguments.
 
+The server negotiates MCP protocol versions `2024-11-05` and `2025-03-26`.
+Unsupported requests receive the newest supported version.
+
 The trust boundary is unchanged: models propose, while the deterministic cooo
 SDK and Lyquid protocol decide whether an operation is valid. The MCP server does
 not add authority, custody, or policy bypasses.
@@ -19,10 +22,10 @@ not add authority, custody, or policy bypasses.
 | `COOO_LYQUID_ID` | unset | Optional expected Lyquid id pin |
 | `COOO_CONTRACT` | unset | Optional expected contract pin |
 | `COOO_TIMEOUT_MS` | `30000` | SDK request timeout |
-| `COOO_CALLER` | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` | `from` address for writes |
+| `COOO_CALLER` | unset | Required `from` address for write tools |
 
-Operators must set `COOO_CALLER` to their own address. The default is only a
-well-known local development account.
+Read tools do not use `COOO_CALLER`. Write tools fail until an explicit caller
+address is supplied.
 
 ## Quickstart
 
@@ -59,8 +62,11 @@ Example MCP client configuration:
   server or its upstream state/RPC endpoints to untrusted networks.
 - The server has no custody and no signing keys beyond the configured caller
   address flow used by the SDK.
-- A write tool's transaction hash is a sequencing receipt, not finality. Confirm
-  application state with `cooo_wait_for_state` or `cooo_task_detail`.
+- Every write result contains both `operationId` and `transactionHash`. Reuse the
+  exact operation ID to reconcile an unknown outcome.
+- A transaction hash is a sequencing receipt, not finality. Confirm application state
+  with `cooo_wait_for_state` or `cooo_task_detail`.
+  with cooo_wait_for_state or cooo_task_detail.
 
 ## Limitations
 

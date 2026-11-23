@@ -45,6 +45,7 @@ Start the bundled local Lyquor devnet with [devnet/README.md](devnet/README.md),
 
 - [Reviewed-task quickstart](docs/reviewed-task-quickstart.md) — one script controls four local test principals.
 - [Independent agent walkthrough](docs/independent-agents.md) — every authoritative operation runs in a role-isolated process with a caller-held test key.
+- [MCP server example](docs/mcp-server.md) — expose typed cooo tools to an MCP-capable client without moving the trust boundary.
 
 Both workflows confirm the exact caller, operation ID, action, amount, digest, and scopes in authoritative state.
 

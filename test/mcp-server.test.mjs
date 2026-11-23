@@ -1,13 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const serverPath = path.join(repoRoot, 'examples', 'mcp-server.mjs');
 
-function startServer() {
+function startServer(envOverrides = {}) {
   const child = spawn(process.execPath, [serverPath], {
     cwd: repoRoot,
     env: {
@@ -16,6 +17,7 @@ function startServer() {
       COOO_INFO_URL: 'http://127.0.0.1:9/lyquid/info',
       COOO_STATE_URL: 'http://127.0.0.1:9/api/state',
       COOO_TIMEOUT_MS: '2000',
+      ...envOverrides,
     },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
@@ -99,6 +101,56 @@ function startServer() {
   return { request, notify, stop, stderr: () => stderr };
 }
 
+function startSdkBackend() {
+  const contract = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+  const transactionHash = '0x' + '12'.repeat(32);
+  const server = createServer((request, response) => {
+    let body = '';
+    request.setEncoding('utf8');
+    request.on('data', (chunk) => {
+      body += chunk;
+    });
+    request.on('end', () => {
+      if (request.url === '/api/state') {
+        response.end(JSON.stringify({
+          ledger: {
+            totalDeposits: '0',
+            balancesTotal: '0',
+            reserved: '0',
+            earnedClaims: '0',
+            completedPayouts: '0',
+            completedRefunds: '0',
+            platformFees: '0',
+            conserved: true,
+          },
+          tasks: [],
+          deployment: {
+            lyquidId: 'test-lyquid',
+            contract,
+            protocolVersion: 'cooo-local-v0.3-terms-bound-review',
+          },
+        }));
+        return;
+      }
+      if (request.url === '/lyquid/info') {
+        response.end(JSON.stringify({ lyquid_id: 'test-lyquid', backend_contract: contract }));
+        return;
+      }
+      const payload = JSON.parse(body);
+      response.end(JSON.stringify({ jsonrpc: '2.0', id: payload.id, result: transactionHash }));
+    });
+  });
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      resolve({
+        url: `http://127.0.0.1:${address.port}`,
+        stop: () => new Promise((done) => server.close(done)),
+      });
+    });
+  });
+}
+
 test('cooo MCP server', async (t) => {
   const server = startServer();
 
@@ -112,8 +164,16 @@ test('cooo MCP server', async (t) => {
 
       assert.equal(response.result.serverInfo.name, 'cooo-mcp');
       assert.equal(typeof response.result.capabilities.tools, 'object');
-      // The requested protocol version must be echoed verbatim.
+      // Supported versions are explicit; unsupported requests negotiate the latest.
       assert.equal(response.result.protocolVersion, '2025-03-26');
+    });
+
+    await t.test('initialize negotiates only supported protocol versions', async () => {
+      const legacy = await server.request('initialize', { protocolVersion: '2024-11-05' });
+      assert.equal(legacy.result.protocolVersion, '2024-11-05');
+
+      const unsupported = await server.request('initialize', { protocolVersion: '2099-01-01' });
+      assert.equal(unsupported.result.protocolVersion, '2025-03-26');
     });
 
     await t.test('tools/list exposes tools after initialized notification', async () => {
@@ -191,6 +251,68 @@ test('cooo MCP server', async (t) => {
       const response = await server.request('foo/bar', {});
 
       assert.equal(response.error.code, -32601);
+    });
+
+    await t.test('write results expose caller and generated operation identity', async () => {
+      const backend = await startSdkBackend();
+      const writer = startServer({
+        COOO_RPC_URL: `${backend.url}/lyquid/api`,
+        COOO_INFO_URL: `${backend.url}/lyquid/info`,
+        COOO_STATE_URL: `${backend.url}/api/state`,
+        COOO_LYQUID_ID: 'test-lyquid',
+        COOO_CONTRACT: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+        COOO_CALLER: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+      });
+
+      try {
+        await writer.request('initialize', { protocolVersion: '2025-03-26' });
+        writer.notify('notifications/initialized');
+        const explicit = await writer.request('tools/call', {
+          name: 'cooo_deposit',
+          arguments: { operationId: 'recoverable-deposit', amount: '1' },
+        });
+        assert.notEqual(explicit.result.isError, true);
+        const explicitValue = JSON.parse(explicit.result.content[0].text);
+        assert.equal(explicitValue.operationId, 'recoverable-deposit');
+        assert.equal(explicitValue.transactionHash, '0x' + '12'.repeat(32));
+
+        const generated = await writer.request('tools/call', {
+          name: 'cooo_deposit',
+          arguments: { amount: '1' },
+        });
+        assert.notEqual(generated.result.isError, true);
+        const generatedValue = JSON.parse(generated.result.content[0].text);
+        assert.match(generatedValue.operationId, /^cooo-deposit-/);
+        assert.notEqual(generatedValue.operationId, generatedValue.transactionHash);
+      } finally {
+        await writer.stop();
+        await backend.stop();
+      }
+    });
+
+    await t.test('missing COOO_CALLER rejects writes', async () => {
+      const backend = await startSdkBackend();
+      const writer = startServer({
+        COOO_RPC_URL: `${backend.url}/lyquid/api`,
+        COOO_INFO_URL: `${backend.url}/lyquid/info`,
+        COOO_STATE_URL: `${backend.url}/api/state`,
+        COOO_LYQUID_ID: 'test-lyquid',
+        COOO_CONTRACT: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+      });
+
+      try {
+        await writer.request('initialize', { protocolVersion: '2025-03-26' });
+        writer.notify('notifications/initialized');
+        const response = await writer.request('tools/call', {
+          name: 'cooo_deposit',
+          arguments: { operationId: 'no-caller', amount: '1' },
+        });
+        assert.equal(response.result.isError, true);
+        assert.match(response.result.content[0].text, /from must be a 20-byte address/);
+      } finally {
+        await writer.stop();
+        await backend.stop();
+      }
     });
 
     await t.test('server remains alive and answers ping', async () => {
