@@ -14,6 +14,21 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  backend:
+    name: Rust backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - run: cargo fmt --all --check
+        working-directory: backend/cooo-lyquid
+      - run: cargo check --locked
+        working-directory: backend/cooo-lyquid
+      - run: cargo test --locked
+        working-directory: backend/cooo-lyquid
+
   verify:
     name: Node ${{ matrix.node }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}

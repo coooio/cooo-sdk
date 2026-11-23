@@ -64,6 +64,8 @@ A returned hash is not application success. Confirm authoritative state or the e
 | `cancel(from, operationId, taskId)` | Payer |
 | `send(method, from, types, values)` | Local development escape hatch |
 
+`deliverProvider` accepts only the digest recorded in the assigned provider terms. Zero and mismatched evidence are rejected before a provider is marked delivered.
+
 Typed wrappers perform argument validation and ABI encoding. Avoid the low-level `send` escape hatch when a typed method exists.
 
 ## Errors

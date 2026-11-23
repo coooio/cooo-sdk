@@ -94,6 +94,16 @@ impl ProviderRecord {
             || self.payment_state == PAYMENT_CANCELLED
             || self.payment_state == PAYMENT_HANDED_OFF
     }
+
+    fn validate_delivery_evidence(&self, evidence: B256) -> LyquidResult<()> {
+        if evidence == B256::ZERO {
+            return Err(runtime_error("evidence digest cannot be zero"));
+        }
+        if evidence != self.expected_digest {
+            return Err(runtime_error("provider evidence does not match terms"));
+        }
+        Ok(())
+    }
 }
 
 /// Independent verification work attached to one producer assignment.
@@ -2367,22 +2377,25 @@ fn deliver_provider(
     if ctx.caller != provider {
         return Err(runtime_error("only the assigned provider can deliver"));
     }
-    if evidence == B256::ZERO {
-        return Err(runtime_error("evidence digest cannot be zero"));
-    }
     if task.provider_epoch != record_authority_epoch(&ctx.network, &task_id, provider)? {
         return Err(runtime_error("provider authority epoch is stale"));
     }
-    let sequence = next_sequence(&mut ctx.network)?;
     let key = (task_id, provider);
+    let assigned = ctx
+        .network
+        .provider_records
+        .get(&key)
+        .ok_or_else(|| runtime_error("provider assignment not found"))?;
+    if assigned.execution_state != EXECUTION_DISPATCHED {
+        return Err(runtime_error("provider execution transition is invalid"));
+    }
+    assigned.validate_delivery_evidence(evidence)?;
+    let sequence = next_sequence(&mut ctx.network)?;
     let record = ctx
         .network
         .provider_records
         .get_mut(&key)
         .ok_or_else(|| runtime_error("provider assignment not found"))?;
-    if record.execution_state != EXECUTION_DISPATCHED {
-        return Err(runtime_error("provider execution transition is invalid"));
-    }
     record.evidence = evidence;
     record.execution_state = EXECUTION_DELIVERED;
     record.updated_sequence = sequence;
@@ -3400,4 +3413,58 @@ fn state_json(network: &__lyquid::NetworkState, lyquid_id: LyquidID) -> LyquidRe
 #[method::instance(export = http, method = "GET", path_prefix = "/api/state")]
 fn http_state(ctx: &_, _req: http::Request) -> LyquidResult<http::Response> {
     Ok(json_response(state_json(&ctx.network, ctx.lyquid_id)?))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn filled_digest(byte: u8) -> B256 {
+        B256::from([byte; 32])
+    }
+
+    fn dispatched_provider(expected_digest: B256) -> ProviderRecord {
+        ProviderRecord {
+            provider: Address::ZERO,
+            effective_scope: String::from("work"),
+            amount: U256::from(1_u8),
+            expected_digest,
+            evidence: B256::ZERO,
+            execution_state: EXECUTION_DISPATCHED,
+            payment_state: PAYMENT_RESERVED,
+            authority_epoch: 1,
+            created_sequence: 1,
+            updated_sequence: 1,
+        }
+    }
+
+    fn runtime_message(result: LyquidResult<()>) -> String {
+        match result {
+            Err(LyquidError::LyquorRuntime(message)) => message,
+            _ => panic!("expected a Lyquor runtime error"),
+        }
+    }
+
+    #[test]
+    fn provider_delivery_rejects_zero_evidence() {
+        let record = dispatched_provider(filled_digest(0x11));
+        let error = runtime_message(record.validate_delivery_evidence(B256::ZERO));
+        assert_eq!(error, "evidence digest cannot be zero");
+    }
+
+    #[test]
+    fn provider_delivery_rejects_evidence_that_does_not_match_terms() {
+        let record = dispatched_provider(filled_digest(0x11));
+        let error = runtime_message(record.validate_delivery_evidence(filled_digest(0x22)));
+        assert_eq!(error, "provider evidence does not match terms");
+    }
+
+    #[test]
+    fn provider_delivery_accepts_the_assigned_terms_digest() {
+        let expected = filled_digest(0x11);
+        let record = dispatched_provider(expected);
+        record
+            .validate_delivery_evidence(expected)
+            .expect("matching evidence must be valid");
+    }
 }
