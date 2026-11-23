@@ -89,22 +89,22 @@ if (providerState(beforeRejectedDelivery).executionState !== 1) {
   throw new Error('provider must be dispatched before the wrong-digest attempt');
 }
 
-let wrongDigestRejected = false;
-try {
-  await sdk.deliverProvider(
-    accounts.provider,
-    `${taskId}:wrong-digest:d${deploymentTag}`,
-    taskId,
-    accounts.provider,
-    wrongDigest,
-  );
-} catch (error) {
-  if (!/provider evidence does not match terms/.test(String(error?.message))) throw error;
-  wrongDigestRejected = true;
-}
-if (!wrongDigestRejected) throw new Error('wrong provider digest was accepted');
+const wrongDigestOperationId = `${taskId}:wrong-digest:d${deploymentTag}`;
+// Lyquor can sequence a method whose validation returns an error; state is decisive.
+const wrongDigestTransactionHash = await sdk.deliverProvider(
+  accounts.provider,
+  wrongDigestOperationId,
+  taskId,
+  accounts.provider,
+  wrongDigest,
+);
+await new Promise(resolve => setTimeout(resolve, 2_000));
 
 const afterRejectedDelivery = await sdk.getState();
+const wrongDigestOperation = afterRejectedDelivery.operations?.find(operation =>
+  operation.caller.toLowerCase() === accounts.provider.toLowerCase() &&
+  operation.operationId === wrongDigestOperationId);
+if (wrongDigestOperation) throw new Error('wrong provider digest was committed');
 if ((afterRejectedDelivery.operations?.length ?? 0) !== beforeOperationCount) {
   throw new Error('rejected wrong-digest delivery changed the authoritative operation set');
 }
@@ -112,7 +112,7 @@ if (providerState(afterRejectedDelivery).executionState !== 1) {
   throw new Error('rejected wrong-digest delivery changed provider execution state');
 }
 if (!afterRejectedDelivery.ledger.conserved) throw new Error('ledger conservation failed after rejection');
-console.log('wrong digest: rejected without authoritative state change');
+console.log('wrong digest: sequenced but rejected without authoritative state change');
 
 const delivery = workflow[7];
 await sdk.deliverProvider(
@@ -136,6 +136,7 @@ console.log(JSON.stringify({
   taskId,
   evidenceDigest,
   wrongDigest,
+  wrongDigestTransactionHash,
   providerExecutionState: providerState(delivered.state).executionState,
   operationCount: delivered.state.operations?.length ?? 0,
   ledgerConserved: delivered.state.ledger.conserved,
