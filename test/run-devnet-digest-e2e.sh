@@ -87,7 +87,9 @@ info_url=''
 state_url=''
 for _ in $(seq 1 24); do
   if ! kill -0 "$devnet_pid" >/dev/null 2>&1; then
-    wait "$devnet_pid" || true
+    devnet_status=0
+    wait "$devnet_pid" || devnet_status=$?
+    echo "Devnet process exited with status $devnet_status." >&2
     cat "$work/devnet.log" >&2
     exit 1
   fi
