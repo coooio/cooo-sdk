@@ -49,7 +49,11 @@ Check deployment health and conservation:
 ./devnet/status.sh
 ```
 
-### Authoritative provider-digest E2E`n`nThe repository also includes a dedicated Docker-based workflow that deploys a fresh synthetic cooo Lyquid and verifies that a wrong provider digest is rejected without changing operation or execution state, while the correct digest enters `Delivered`. Run it manually from GitHub Actions with **Devnet E2E → Run workflow**, or let the path-filtered workflow run on relevant changes.`n`nStop the node while retaining its volume and deployment metadata:
+### Authoritative provider-digest E2E
+
+The repository also includes a dedicated Docker-based workflow that deploys a fresh synthetic cooo Lyquid and verifies that a wrong provider digest is rejected without changing operation or execution state, while the correct digest enters `Delivered`. Run it manually from GitHub Actions with **Devnet E2E → Run workflow**, or let the path-filtered workflow run on relevant changes.
+
+Stop the node while retaining its volume and deployment metadata:
 
 ```sh
 ./devnet/stop.sh
